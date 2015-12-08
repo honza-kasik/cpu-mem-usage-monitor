@@ -1,5 +1,7 @@
+#!/usr/bin/gnuplot --persist
+
 set term png small size 800,600
-set output "mem-graph.png"
+set output ARG2
 
 set ylabel "%CPU"
 set y2label "MEM"
@@ -10,5 +12,5 @@ set y2tics nomirror in
 set yrange [0:*]
 set y2range [0:*]
 
-plot "usage.log" using 3 with lines axes x1y1 title "%CPU", \
-     "usage.log" using 2 with lines axes x1y2 title "MEM"
+plot ARG1 using 3 with lines axes x1y1 title "%CPU", \
+     ARG1 using 2 with lines axes x1y2 title "MEM"
