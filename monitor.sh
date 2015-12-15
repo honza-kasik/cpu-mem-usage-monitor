@@ -11,7 +11,7 @@ while getopts 'p:gl:d:s' flag; do
     l) LOG_FILE="${OPTARG}" ;;
     d) GRAPH_FILE="${OPTARG}" ;;
     s) SLEEP_TIME="${OPTARG}" ;;
-    *) error "Unexpected option ${flag}" ;;
+    *) echo "Unexpected option ${flag}"; exit 42;;
   esac
 done
 
@@ -27,4 +27,5 @@ if [ -n "$PID" ] && ps --pid $PID -o "pid=" >/dev/null 2>&1; then
     done
 else
     >&2 echo "ERROR: You have to supply a PID of running process!";
+    exit 42
 fi
