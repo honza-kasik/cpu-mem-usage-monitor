@@ -2,7 +2,7 @@
 Very simple bash and gnuplot (>=5.0) script to monitor cpu and memory usage of given process in graph
 
 ## How to use
-Clone repo, mark monitor.sh as an executable running `chmod +x monitor.sh` and run it by `./monitor.sh PID_I_WANNA_MONITOR`. 
+Clone repo, mark monitor.sh as an executable running `chmod +x monitor.sh` and run it by `./monitor.sh PID_I_WANNA_MONITOR [REFRESH_TIME]`. Default refresh time is one second.
 
 Logged raw values will be placed in usage.log files and graph will be placed in usage.png by default.
 
