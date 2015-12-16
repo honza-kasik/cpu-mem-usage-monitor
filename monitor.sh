@@ -19,15 +19,15 @@ while getopts 'p:gl:d:sc:' flag; do
 done
 
 function count_words {
-  echo $#
+    echo $#
 }
 
 function is_running_process {
-  TEST=$(ps --pid $1 -o "pid=")
+  TEST=$(ps --pid $1 -o "pid=") #writes pid to stdout if it is a running process
   if [ -z "$TEST" ]; then
-    return 1
+      return 1
   else
-    return 0
+      return 0
   fi
 }
 
@@ -38,63 +38,62 @@ function monitor_process {
                                                 do printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line";
                                               done >> $LOG_FILE
           if [[ "$GRAPH" = true ]]; then
-            gnuplot -c gnuplot.script $LOG_FILE $GRAPH_FILE
+              gnuplot -c gnuplot.script $LOG_FILE $GRAPH_FILE
           fi
           sleep $SLEEP_TIME
       done
   else
-      >&2 echo "ERROR: You have to specify a PID of running process!"
+      >&2 echo "$(date) ERROR: You have to specify a PID of running process!"
       exit 1
   fi
 }
 
 function find_pid {
-  if [ -z "$COMMAND" ]; then #if COMMAND is null
-    >&2 echo "ERROR: You have to specify command name if you want to track it."
-    exit 1
-  fi
-
-  unset PID
-  TIMEOUT=$1
-
-  while [ $TIMEOUT -gt  0 ]; do
-    PID=$(ps -C $COMMAND -o "pid=" --sort="time") #TODO split, count and print message
-    if [ -n "$PID" ]; then
-      WORD_COUNT=$(count_words $PID)
-
-      if [ "$WORD_COUNT" -gt 1 ]; then
-        echo "INFO: Found $WORD_COUNT PIDs for $COMMAND: ${PID//[[:space:]]/; }"
-        #$(echo $PID | tr ' ' ';')
-        PID=$(echo "$PID" | head -n 1)
-      else
-        echo "INFO: Found PID ($PID) of $COMMAND."
-      fi
-
-      export PID="${PID//[[:blank:]]/}"
-      return 0;
+    if [ -z "$COMMAND" ]; then #COMMAND is null
+        >&2 echo "$(date) ERROR: You have to specify command name if you want to track it."
+        exit 1
     fi
-    TIMEOUT=$((TIMEOUT-1));
-    sleep 1
-  done
-  >&2 echo "ERROR: Looking for PID of $COMMAND timed out after $1 seconds."
-  return 1;
+
+    unset PID
+    TIMEOUT=$1
+
+    while [ $TIMEOUT -gt  0 ]; do
+        PID=$(ps -C $COMMAND -o "pid=" --sort="time")
+        if [ -n "$PID" ]; then
+            WORD_COUNT=$(count_words $PID)
+
+            if [ "$WORD_COUNT" -gt 1 ]; then #more than one PIDs were found
+                echo "$(date) INFO: Found $WORD_COUNT PIDs for $COMMAND: ${PID//[[:space:]]/; }"
+                PID=$(echo "$PID" | head -n 1) #get "newest" PID
+            else
+                echo "$(date) INFO: Found PID ($PID) of $COMMAND."
+            fi
+
+            export PID="${PID//[[:blank:]]/}"
+            return 0;
+        fi
+        TIMEOUT=$((TIMEOUT-1));
+        sleep 1
+    done
+    >&2 echo "$(date) ERROR: Looking for PID of $COMMAND timed out after $1 seconds."
+    return 1;
 }
 
 if [ -n "$PID" -a -z "$COMMAND" ]; then
-  monitor_process $PID
+    monitor_process $PID
 elif [ -n "$COMMAND" ]; then
-  echo "INFO: Waiting for $COMMAND to appear first time."
-  find_pid 1800 > /dev/null
-  if [ "$?" -eq 1 ]; then
+    echo "$(date) INFO: Waiting for $COMMAND to appear first time."
+    find_pid 1800 > /dev/null
+    if [ "$?" -eq 1 ]; then #return code of find_pid was 1
     exit 1
-  fi
-  while true; do
-    find_pid 60
-    if [ "$?" -eq 0 ]; then
-      echo "INFO: Trying to monitor PID $PID."
-      monitor_process $PID
-    else
-      exit 1
     fi
-  done
+    while true; do
+        find_pid 60
+        if [ "$?" -eq 0 ]; then #return code of find_pid was 0
+            echo "$(date) INFO: Trying to monitor PID $PID."
+            monitor_process $PID
+        else
+            exit 1
+    fi
+    done
 fi
