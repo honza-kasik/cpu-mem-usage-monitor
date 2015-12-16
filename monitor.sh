@@ -18,6 +18,10 @@ while getopts 'p:gl:d:sc:' flag; do
   esac
 done
 
+function count_words {
+  echo $#
+}
+
 function is_running_process {
   TEST=$(ps --pid $1 -o "pid=")
   if [ -z "$TEST" ]; then
@@ -54,10 +58,19 @@ function find_pid {
   TIMEOUT=$1
 
   while [ $TIMEOUT -gt  0 ]; do
-    PID=$(ps -C $COMMAND -o "pid=" --sort="time" | head -n 1)
+    PID=$(ps -C $COMMAND -o "pid=" --sort="time") #TODO split, count and print message
     if [ -n "$PID" ]; then
+      WORD_COUNT=$(count_words $PID)
+
+      if [ "$WORD_COUNT" -gt 1 ]; then
+        echo "INFO: Found $WORD_COUNT PIDs for $COMMAND: ${PID//[[:space:]]/; }"
+        #$(echo $PID | tr ' ' ';')
+        PID=$(echo "$PID" | head -n 1)
+      else
+        echo "INFO: Found PID ($PID) of $COMMAND."
+      fi
+
       export PID="${PID//[[:blank:]]/}"
-      echo "INFO: Found PID ($PID) of $COMMAND."
       return 0;
     fi
     TIMEOUT=$((TIMEOUT-1));
