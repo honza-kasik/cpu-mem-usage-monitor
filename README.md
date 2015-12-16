@@ -2,7 +2,10 @@
 Very simple bash and gnuplot (>=5.0) script to monitor cpu and memory usage of given process in graph
 
 ## How to use
-Clone repo, mark monitor.sh as an executable running `chmod +x monitor.sh` and run it by `./monitor.sh OPTIONS`.
+Clone repo, mark monitor.sh as an executable running `chmod +x monitor.sh` and run it by
+```bash
+./monitor.sh [OPTIONS]... -p PID | [OPTIONS]... -c COMMAND
+```
 
 ### Options
 * `-p PID` PID which will be monitored
@@ -10,7 +13,12 @@ Clone repo, mark monitor.sh as an executable running `chmod +x monitor.sh` and r
 * `[-l FILE]` Log file path
 * `[-d FILE]` Graph file path
 * `[-s NUMBER]` Time after the values will be added to log
+* `-c COMMAND` Command name will be tracked in system instead of PID
 
+### Example
+`./monitor.sh -c firefox` will track different instances of Firefox browser in system one at a time (always the newest instance if previously watched was killed).
+
+### Notes
 Logged raw values will be placed in usage.log files and graph will be placed in usage.png by default. Graph **will not be created** by default.
 
 ## Resources
