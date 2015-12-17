@@ -12,8 +12,12 @@ Clone repo, mark monitor.sh as an executable running `chmod +x monitor.sh` and r
 * `[-g]` The graph will be created
 * `[-l FILE]` Log file path
 * `[-d FILE]` Graph file path
-* `[-s NUMBER]` Time after the values will be added to log
+* `[-s NUMBER]` Time after the values will be added to log in seconds
+
+#### Tracking by command name options
 * `-c COMMAND` Command name will be tracked in system instead of PID
+* `[-F NUMBER]` How long it will be waited for first occurrence of command in ps output.
+* `[-N NUMBER]` How long it will be waited for next instance to appear in ps output.
 
 ### Example
 `./monitor.sh -c firefox` will track different instances of Firefox browser in system one at a time (always the newest instance if previously watched was killed).
