@@ -1,12 +1,15 @@
 #!/bin/bash
 unset PID
-COMMAND=""
 GRAPH=false
 SLEEP_TIME=1
 LOG_FILE="usage.log"
 GRAPH_FILE="usage.png"
+#command tracking
+COMMAND=""
+FIRST_TIMEOUT=1800 #how long will be waited for first occurence of command in ps
+NEXT_TIMEOUT=600 #how long will be waited for next instance to appear in ps
 
-while getopts 'p:gl:d:sc:' flag; do
+while getopts 'p:gl:d:sc:F:N:' flag; do
   case "${flag}" in
     p) PID="${OPTARG}" ;;
     g) GRAPH=true ;;
@@ -14,12 +17,18 @@ while getopts 'p:gl:d:sc:' flag; do
     d) GRAPH_FILE="${OPTARG}" ;;
     s) SLEEP_TIME="${OPTARG}" ;;
     c) COMMAND="${OPTARG}" ;;
+    F) FIRST_TIMEOUT="${OPTARG}" ;;
+    N) NEXT_TIMEOUT="${OPTARG}" ;;
     *) echo "Unexpected option ${flag}"; exit 1;;
   esac
 done
 
 function count_words {
     echo $#
+}
+
+function printlog {
+    printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
 function is_running_process {
@@ -35,7 +44,7 @@ function monitor_process {
   if [ -n "$PID" ] && is_running_process $PID; then
       while is_running_process $PID; do
           ps --pid $PID -o pid=,size=,%cpu= | while IFS= read -r line;
-                                                do printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line";
+                                                do printlog "$line";
                                               done >> $LOG_FILE
           if [[ "$GRAPH" = true ]]; then
               gnuplot -c gnuplot.script $LOG_FILE $GRAPH_FILE
@@ -43,14 +52,14 @@ function monitor_process {
           sleep $SLEEP_TIME
       done
   else
-      >&2 echo "$(date) ERROR: You have to specify a PID of running process!"
+      >&2 printlog "ERROR: You have to specify a PID of running process!"
       exit 1
   fi
 }
 
 function find_pid {
     if [ -z "$COMMAND" ]; then #COMMAND is null
-        >&2 echo "$(date) ERROR: You have to specify command name if you want to track it."
+        >&2 printlog "ERROR: You have to specify command name if you want to track it."
         exit 1
     fi
 
@@ -63,37 +72,40 @@ function find_pid {
             WORD_COUNT=$(count_words $PID)
 
             if [ "$WORD_COUNT" -gt 1 ]; then #more than one PIDs were found
-                echo "$(date) INFO: Found $WORD_COUNT PIDs for $COMMAND: ${PID//[[:space:]]/; }"
+                printlog "INFO: Found $WORD_COUNT PIDs for $COMMAND: ${PID//[[:space:]]/; }" #trim whitespaces
                 PID=$(echo "$PID" | head -n 1) #get "newest" PID
             else
-                echo "$(date) INFO: Found PID ($PID) of $COMMAND."
+                PID=${PID//[[:blank:]]/} #trim spaces
+                printlog "INFO: Found PID ($PID) of $COMMAND."
             fi
 
-            export PID="${PID//[[:blank:]]/}"
+            export PID
             return 0;
         fi
         TIMEOUT=$((TIMEOUT-1));
         sleep 1
     done
-    >&2 echo "$(date) ERROR: Looking for PID of $COMMAND timed out after $1 seconds."
+    >&2 printlog "ERROR: Looking for PID of $COMMAND timed out after $1 seconds."
     return 1;
 }
 
-if [ -n "$PID" -a -z "$COMMAND" ]; then
+if [ -n "$PID" -a -z "$COMMAND" ]; then #PID is set and COMMAND is not
     monitor_process $PID
-elif [ -n "$COMMAND" ]; then
-    echo "$(date) INFO: Waiting for $COMMAND to appear first time."
-    find_pid 1800 > /dev/null
-    if [ "$?" -eq 1 ]; then #return code of find_pid was 1
-    exit 1
+elif [ -z "$PID" -a -n "$COMMAND" ]; then #COMMAND is set and PID is not
+    printlog "INFO: Waiting for $COMMAND to appear first time."
+    find_pid $FIRST_TIMEOUT > /dev/null
+    if [ "$?" -eq 1 ]; then #find_pid failed
+        exit 1
     fi
     while true; do
-        find_pid 60
-        if [ "$?" -eq 0 ]; then #return code of find_pid was 0
-            echo "$(date) INFO: Trying to monitor PID $PID."
+        find_pid $NEXT_TIMEOUT
+        if [ "$?" -eq 0 ]; then
+            printlog "INFO: Trying to monitor PID $PID."
             monitor_process $PID
         else
             exit 1
-    fi
+        fi
     done
+else
+    printlog "ERROR: Invalid options combination!"
 fi
