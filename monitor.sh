@@ -32,11 +32,11 @@ function printlog {
 }
 
 function printerr {
-    >&2 printlog $1
+    >&2 printlog "$1"
 }
 
 function throwerr {
-    printerr $1
+    printerr "$1"
     ERROR_CODE=1
     if [ -n "$2" ]; then
         ERROR_CODE=$2
@@ -64,7 +64,7 @@ function monitor_process {
           fi
           sleep $SLEEP_TIME
       done
-  elif [ -z "$COMMAND" ] #ignore this error if process is tracked by command
+  elif [ -z "$COMMAND" ]; then #ignore this error if process is tracked by command
       throwerr "ERROR: You have to specify a PID of running process!"
   fi
 }
