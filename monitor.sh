@@ -31,6 +31,19 @@ function printlog {
     printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
+function printerr {
+    >&2 printlog $1
+}
+
+function throwerr {
+    printerr $1
+    ERROR_CODE=1
+    if [ -n "$2" ]; then
+        ERROR_CODE=$2
+    fi
+    exit $ERROR_CODE
+}
+
 function is_running_process {
   TEST=$(ps --pid $1 -o "pid=") #writes pid to stdout if it is a running process
   if [ -z "$TEST" ]; then
@@ -51,16 +64,14 @@ function monitor_process {
           fi
           sleep $SLEEP_TIME
       done
-  else
-      >&2 printlog "ERROR: You have to specify a PID of running process!"
-      exit 1
+  elif [ -z "$COMMAND" ] #ignore this error if process is tracked by command
+      throwerr "ERROR: You have to specify a PID of running process!"
   fi
 }
 
 function find_pid {
-    if [ -z "$COMMAND" ]; then #COMMAND is null
-        >&2 printlog "ERROR: You have to specify command name if you want to track it."
-        exit 1
+    if [ -z "$COMMAND" ]; then #what command shoudl be tracked?
+        throwerr "ERROR: You have to specify command name if you want to track it."
     fi
 
     unset PID
@@ -85,7 +96,7 @@ function find_pid {
         TIMEOUT=$((TIMEOUT-1));
         sleep 1
     done
-    >&2 printlog "ERROR: Looking for PID of $COMMAND timed out after $1 seconds."
+    printerr "ERROR: Looking for PID of $COMMAND timed out after $1 seconds."
     return 1;
 }
 
@@ -107,5 +118,5 @@ elif [ -z "$PID" -a -n "$COMMAND" ]; then #COMMAND is set and PID is not
         fi
     done
 else
-    printlog "ERROR: Invalid options combination!"
+    throwerr "ERROR: Invalid options combination!"
 fi
