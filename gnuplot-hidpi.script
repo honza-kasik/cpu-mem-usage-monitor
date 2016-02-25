@@ -1,0 +1,20 @@
+#!/usr/bin/gnuplot --persist
+
+set term png small size 1920,1080
+set output ARG2
+
+set ylabel "%CPU"
+set y2label "MEM"
+
+set ytics nomirror
+set y2tics nomirror in
+
+set yrange [0:*]
+set y2range [0:*]
+
+set xdata time
+set timefmt '[%Y-%m-%d %H:%M:%S]'
+set format x "%H:%M"
+
+plot	ARG1 using 1:5 with lines axes x1y1 title "%CPU", \
+	ARG1 using 1:4 with lines axes x1y2 title "MEM"
